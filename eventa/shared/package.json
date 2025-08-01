@@ -1,0 +1,13 @@
+{
+  "name": "@eventa/shared",
+  "version": "1.0.0",
+  "description": "Shared types, utilities, and configuration for Eventa platform",
+  "main": "index.ts",
+  "private": true,
+  "dependencies": {
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}

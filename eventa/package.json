@@ -1,0 +1,20 @@
+{
+  "name": "eventa",
+  "version": "1.0.0",
+  "description": "Event discovery, ticketing & digital voting platform",
+  "private": true,
+  "workspaces": [
+    "mobile",
+    "web",
+    "shared"
+  ],
+  "scripts": {
+    "dev:mobile": "cd mobile && npm run start",
+    "dev:web": "cd web && npm run dev",
+    "build:web": "cd web && npm run build",
+    "type-check": "npm run type-check --workspaces",
+    "lint": "npm run lint --workspaces"
+  },
+  "author": "Eventa Team",
+  "license": "MIT"
+}

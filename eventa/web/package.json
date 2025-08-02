@@ -1,27 +1,42 @@
 {
-  "name": "web",
-  "version": "0.1.0",
+  "name": "@eventa/web",
+  "version": "1.0.0",
+  "description": "Eventa web dashboard for organizers and admins",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.4.5"
+    "next": "^14.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@types/node": "^20.10.4",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "typescript": "^5.3.3",
+    "tailwindcss": "^3.3.6",
+    "@tailwindcss/forms": "^0.5.7",
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "recharts": "^2.8.0",
+    "date-fns": "^2.30.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "@stripe/stripe-js": "^2.2.0",
+    "lucide-react": "^0.294.0",
+    "@eventa/shared": "*"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
-    "eslint": "^9",
-    "eslint-config-next": "15.4.5",
-    "@eslint/eslintrc": "^3"
-  }
+    "@types/node": "^20.10.4",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "typescript": "^5.3.3",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32"
+  },
+  "author": "Eventa Team",
+  "license": "MIT"
 }

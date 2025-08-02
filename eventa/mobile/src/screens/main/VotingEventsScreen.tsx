@@ -15,13 +15,12 @@ import { Button } from '../../components/Button';
 import { EventCard } from '../../components/EventCard';
 import { SearchFilter } from '../../components/SearchFilter';
 import { useEvents } from '../../hooks/useEvents';
-import { authService } from '../../services/supabase';
 
-interface HomeScreenProps {
+interface VotingEventsScreenProps {
   navigation?: any;
 }
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+export const VotingEventsScreen: React.FC<VotingEventsScreenProps> = ({ navigation }) => {
   const {
     events,
     loading,
@@ -36,28 +35,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     refreshEvents,
   } = useEvents();
 
-  const [filterType, setFilterType] = useState<'all' | 'vote' | 'ticket'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'upcoming' | 'live' | 'ended'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const handleEventPress = (event: any) => {
-    // Navigate to event detail screen
-    Alert.alert('Event Selected', `You selected: ${event.title}`);
-    // navigation?.navigate('EventDetail', { eventId: event.id });
-  };
+  // Filter events to only show voting events
+  const votingEvents = events.filter(event => event.type === 'vote');
 
-  const handleTypeChange = (type: 'all' | 'vote' | 'ticket') => {
-    setFilterType(type);
-    setFilters({
-      ...filters,
-      type: type === 'all' ? undefined : type,
-    });
+  React.useEffect(() => {
+    // Set the type filter to 'vote' when component mounts
+    setFilters({ ...filters, type: 'vote' });
+  }, []);
+
+  const handleEventPress = (event: any) => {
+    // Navigate to voting event detail screen
+    Alert.alert('Voting Event', `Start voting for: ${event.title}`);
+    // navigation?.navigate('VotingEventDetail', { eventId: event.id });
   };
 
   const handleStatusChange = (status: 'all' | 'upcoming' | 'live' | 'ended') => {
     setFilterStatus(status);
     setFilters({
       ...filters,
+      type: 'vote', // Always keep vote type
       status: status === 'all' ? undefined : status,
     });
   };
@@ -66,20 +65,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     setSelectedCategory(category);
     setFilters({
       ...filters,
+      type: 'vote', // Always keep vote type
       category,
     });
   };
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await authService.signOut();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
   };
 
   const renderEventCard = ({ item }: { item: any }) => (
@@ -93,15 +85,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     <View style={styles.header}>
       <View style={styles.headerTop}>
         <View>
-          <Text style={styles.greeting}>Good morning! 👋</Text>
-          <Text style={styles.subtitle}>Discover amazing events</Text>
+          <Text style={styles.title}>✨ Voting Events</Text>
+          <Text style={styles.subtitle}>Cast your votes and see live results</Text>
         </View>
-        <Button
-          title="Logout"
-          onPress={handleLogout}
-          variant="ghost"
-          size="small"
-        />
+        
+        {/* Live events indicator */}
+        {votingEvents.some(event => {
+          const now = new Date();
+          const startDate = new Date(event.start_date);
+          const endDate = new Date(event.end_date);
+          return now >= startDate && now <= endDate;
+        }) && (
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>LIVE</Text>
+          </View>
+        )}
       </View>
       
       <SearchFilter
@@ -109,8 +108,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         onSearchChange={handleSearchChange}
         selectedCategory={selectedCategory}
         onCategoryChange={handleCategoryChange}
-        selectedType={filterType}
-        onTypeChange={handleTypeChange}
+        selectedType="vote" // Fixed to vote
+        onTypeChange={() => {}} // No-op since type is fixed
         selectedStatus={filterStatus}
         onStatusChange={handleStatusChange}
       />
@@ -121,8 +120,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     if (loading) {
       return (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading events...</Text>
+          <ActivityIndicator size="large" color={Colors.vote} />
+          <Text style={styles.loadingText}>Loading voting events...</Text>
         </View>
       );
     }
@@ -131,10 +130,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       return (
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={60} color={Colors.error} />
-          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+          <Text style={styles.errorTitle}>Unable to load voting events</Text>
           <Text style={styles.errorText}>{error}</Text>
           <Button
-            title="Try Again"
+            title="Retry"
             onPress={() => refreshEvents()}
             style={styles.retryButton}
           />
@@ -144,22 +143,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
     return (
       <View style={styles.centerContainer}>
-        <Ionicons name="calendar-outline" size={60} color={Colors.textSecondary} />
-        <Text style={styles.emptyTitle}>No events found</Text>
+        <Ionicons name="heart-outline" size={60} color={Colors.vote} />
+        <Text style={styles.emptyTitle}>No voting events found</Text>
         <Text style={styles.emptyText}>
-          {searchQuery || Object.keys(filters).length > 0
-            ? 'Try adjusting your search or filters'
-            : 'Check back later for new events'}
+          {searchQuery || selectedCategory
+            ? 'Try adjusting your search or category filter'
+            : 'Be the first to know when new voting events are available!'}
         </Text>
-        {(searchQuery || Object.keys(filters).length > 0) && (
+        {(searchQuery || selectedCategory) && (
           <Button
             title="Clear Filters"
             onPress={() => {
               setSearchQuery('');
-              setFilters({});
-              setFilterType('all');
-              setFilterStatus('all');
               setSelectedCategory(null);
+              setFilterStatus('all');
+              setFilters({ type: 'vote' });
             }}
             variant="outline"
             style={styles.clearButton}
@@ -174,8 +172,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     
     return (
       <View style={styles.footer}>
-        <ActivityIndicator size="small" color={Colors.primary} />
-        <Text style={styles.footerText}>Loading more events...</Text>
+        <ActivityIndicator size="small" color={Colors.vote} />
+        <Text style={styles.footerText}>Loading more voting events...</Text>
       </View>
     );
   };
@@ -183,7 +181,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        data={events}
+        data={votingEvents}
         keyExtractor={(item) => item.id}
         renderItem={renderEventCard}
         ListHeaderComponent={renderHeader}
@@ -193,14 +191,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refreshEvents}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
+            colors={[Colors.vote]}
+            tintColor={Colors.vote}
           />
         }
         onEndReached={loadMoreEvents}
         onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={events.length === 0 ? styles.emptyContainer : undefined}
+        contentContainerStyle={votingEvents.length === 0 ? styles.emptyContainer : undefined}
       />
     </SafeAreaView>
   );
@@ -223,7 +221,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.lg,
   },
-  greeting: {
+  title: {
     fontSize: Typography.fontSize['2xl'],
     fontFamily: Typography.fontFamily.bold,
     color: Colors.text,
@@ -233,6 +231,26 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
     marginTop: Spacing.xs,
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.success,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: 20,
+    gap: Spacing.xs,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.surface,
+  },
+  liveText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.surface,
   },
   emptyContainer: {
     flexGrow: 1,

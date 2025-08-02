@@ -2,6 +2,8 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { HomeScreen } from '../screens/main/HomeScreen';
+import { VotingEventsScreen } from '../screens/main/VotingEventsScreen';
+import { TicketEventsScreen } from '../screens/main/TicketEventsScreen';
 import { Colors, Layout } from '../constants/theme';
 
 export type MainTabParamList = {
@@ -13,9 +15,7 @@ export type MainTabParamList = {
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-// Placeholder screens
-const VotingEventsScreen = () => <HomeScreen />;
-const TicketEventsScreen = () => <HomeScreen />;
+// Placeholder profile screen
 const ProfileScreen = () => <HomeScreen />;
 
 export const MainNavigator: React.FC = () => {

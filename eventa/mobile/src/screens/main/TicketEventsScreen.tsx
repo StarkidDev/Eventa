@@ -15,13 +15,12 @@ import { Button } from '../../components/Button';
 import { EventCard } from '../../components/EventCard';
 import { SearchFilter } from '../../components/SearchFilter';
 import { useEvents } from '../../hooks/useEvents';
-import { authService } from '../../services/supabase';
 
-interface HomeScreenProps {
+interface TicketEventsScreenProps {
   navigation?: any;
 }
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+export const TicketEventsScreen: React.FC<TicketEventsScreenProps> = ({ navigation }) => {
   const {
     events,
     loading,
@@ -36,28 +35,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     refreshEvents,
   } = useEvents();
 
-  const [filterType, setFilterType] = useState<'all' | 'vote' | 'ticket'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'upcoming' | 'live' | 'ended'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const handleEventPress = (event: any) => {
-    // Navigate to event detail screen
-    Alert.alert('Event Selected', `You selected: ${event.title}`);
-    // navigation?.navigate('EventDetail', { eventId: event.id });
-  };
+  // Filter events to only show ticket events
+  const ticketEvents = events.filter(event => event.type === 'ticket');
 
-  const handleTypeChange = (type: 'all' | 'vote' | 'ticket') => {
-    setFilterType(type);
-    setFilters({
-      ...filters,
-      type: type === 'all' ? undefined : type,
-    });
+  React.useEffect(() => {
+    // Set the type filter to 'ticket' when component mounts
+    setFilters({ ...filters, type: 'ticket' });
+  }, []);
+
+  const handleEventPress = (event: any) => {
+    // Navigate to ticket event detail screen
+    Alert.alert('Ticket Event', `Get tickets for: ${event.title}`);
+    // navigation?.navigate('TicketEventDetail', { eventId: event.id });
   };
 
   const handleStatusChange = (status: 'all' | 'upcoming' | 'live' | 'ended') => {
     setFilterStatus(status);
     setFilters({
       ...filters,
+      type: 'ticket', // Always keep ticket type
       status: status === 'all' ? undefined : status,
     });
   };
@@ -66,6 +65,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     setSelectedCategory(category);
     setFilters({
       ...filters,
+      type: 'ticket', // Always keep ticket type
       category,
     });
   };
@@ -74,12 +74,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     setSearchQuery(query);
   };
 
-  const handleLogout = async () => {
-    try {
-      await authService.signOut();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const getTicketsSoldInfo = () => {
+    const totalTickets = ticketEvents.reduce((sum, event) => {
+      return sum + (event.tickets?.reduce((ticketSum: number, ticket: any) => 
+        ticketSum + ticket.quantity_total, 0) || 0);
+    }, 0);
+    
+    const soldTickets = ticketEvents.reduce((sum, event) => {
+      return sum + (event.tickets?.reduce((ticketSum: number, ticket: any) => 
+        ticketSum + ticket.quantity_sold, 0) || 0);
+    }, 0);
+
+    return { totalTickets, soldTickets };
   };
 
   const renderEventCard = ({ item }: { item: any }) => (
@@ -89,40 +95,64 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     />
   );
 
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <View style={styles.headerTop}>
-        <View>
-          <Text style={styles.greeting}>Good morning! 👋</Text>
-          <Text style={styles.subtitle}>Discover amazing events</Text>
+  const renderHeader = () => {
+    const { totalTickets, soldTickets } = getTicketsSoldInfo();
+    
+    return (
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.title}>🎟️ Ticket Events</Text>
+            <Text style={styles.subtitle}>Discover and book amazing events</Text>
+          </View>
+          
+          {/* Ticket availability indicator */}
+          {ticketEvents.length > 0 && (
+            <View style={styles.statsContainer}>
+              <Text style={styles.statsNumber}>{ticketEvents.length}</Text>
+              <Text style={styles.statsLabel}>Events</Text>
+            </View>
+          )}
         </View>
-        <Button
-          title="Logout"
-          onPress={handleLogout}
-          variant="ghost"
-          size="small"
+        
+        {/* Sales stats */}
+        {totalTickets > 0 && (
+          <View style={styles.salesStats}>
+            <View style={styles.salesItem}>
+              <Text style={styles.salesNumber}>{soldTickets.toLocaleString()}</Text>
+              <Text style={styles.salesLabel}>Tickets Sold</Text>
+            </View>
+            <View style={styles.salesItem}>
+              <Text style={styles.salesNumber}>{(totalTickets - soldTickets).toLocaleString()}</Text>
+              <Text style={styles.salesLabel}>Available</Text>
+            </View>
+            <View style={styles.salesItem}>
+              <Text style={styles.salesNumber}>{Math.round((soldTickets / totalTickets) * 100)}%</Text>
+              <Text style={styles.salesLabel}>Sold Out</Text>
+            </View>
+          </View>
+        )}
+        
+        <SearchFilter
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          selectedCategory={selectedCategory}
+          onCategoryChange={handleCategoryChange}
+          selectedType="ticket" // Fixed to ticket
+          onTypeChange={() => {}} // No-op since type is fixed
+          selectedStatus={filterStatus}
+          onStatusChange={handleStatusChange}
         />
       </View>
-      
-      <SearchFilter
-        searchQuery={searchQuery}
-        onSearchChange={handleSearchChange}
-        selectedCategory={selectedCategory}
-        onCategoryChange={handleCategoryChange}
-        selectedType={filterType}
-        onTypeChange={handleTypeChange}
-        selectedStatus={filterStatus}
-        onStatusChange={handleStatusChange}
-      />
-    </View>
-  );
+    );
+  };
 
   const renderEmptyState = () => {
     if (loading) {
       return (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading events...</Text>
+          <ActivityIndicator size="large" color={Colors.ticket} />
+          <Text style={styles.loadingText}>Loading ticket events...</Text>
         </View>
       );
     }
@@ -131,10 +161,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       return (
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={60} color={Colors.error} />
-          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+          <Text style={styles.errorTitle}>Unable to load ticket events</Text>
           <Text style={styles.errorText}>{error}</Text>
           <Button
-            title="Try Again"
+            title="Retry"
             onPress={() => refreshEvents()}
             style={styles.retryButton}
           />
@@ -144,22 +174,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
     return (
       <View style={styles.centerContainer}>
-        <Ionicons name="calendar-outline" size={60} color={Colors.textSecondary} />
-        <Text style={styles.emptyTitle}>No events found</Text>
+        <Ionicons name="ticket-outline" size={60} color={Colors.ticket} />
+        <Text style={styles.emptyTitle}>No ticket events found</Text>
         <Text style={styles.emptyText}>
-          {searchQuery || Object.keys(filters).length > 0
-            ? 'Try adjusting your search or filters'
-            : 'Check back later for new events'}
+          {searchQuery || selectedCategory
+            ? 'Try adjusting your search or category filter'
+            : 'Stay tuned for exciting events coming your way!'}
         </Text>
-        {(searchQuery || Object.keys(filters).length > 0) && (
+        {(searchQuery || selectedCategory) && (
           <Button
             title="Clear Filters"
             onPress={() => {
               setSearchQuery('');
-              setFilters({});
-              setFilterType('all');
-              setFilterStatus('all');
               setSelectedCategory(null);
+              setFilterStatus('all');
+              setFilters({ type: 'ticket' });
             }}
             variant="outline"
             style={styles.clearButton}
@@ -174,8 +203,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     
     return (
       <View style={styles.footer}>
-        <ActivityIndicator size="small" color={Colors.primary} />
-        <Text style={styles.footerText}>Loading more events...</Text>
+        <ActivityIndicator size="small" color={Colors.ticket} />
+        <Text style={styles.footerText}>Loading more ticket events...</Text>
       </View>
     );
   };
@@ -183,7 +212,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        data={events}
+        data={ticketEvents}
         keyExtractor={(item) => item.id}
         renderItem={renderEventCard}
         ListHeaderComponent={renderHeader}
@@ -193,14 +222,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refreshEvents}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
+            colors={[Colors.ticket]}
+            tintColor={Colors.ticket}
           />
         }
         onEndReached={loadMoreEvents}
         onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={events.length === 0 ? styles.emptyContainer : undefined}
+        contentContainerStyle={ticketEvents.length === 0 ? styles.emptyContainer : undefined}
       />
     </SafeAreaView>
   );
@@ -223,7 +252,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.lg,
   },
-  greeting: {
+  title: {
     fontSize: Typography.fontSize['2xl'],
     fontFamily: Typography.fontFamily.bold,
     color: Colors.text,
@@ -231,6 +260,45 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    marginTop: Spacing.xs,
+  },
+  statsContainer: {
+    alignItems: 'center',
+    backgroundColor: Colors.ticket,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    minWidth: 60,
+  },
+  statsNumber: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.surface,
+  },
+  statsLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.surface,
+    opacity: 0.9,
+  },
+  salesStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
+  salesItem: {
+    alignItems: 'center',
+  },
+  salesNumber: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.text,
+  },
+  salesLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
     color: Colors.textSecondary,
     marginTop: Spacing.xs,
   },
